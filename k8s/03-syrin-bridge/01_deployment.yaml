@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: de-syrin-bridge
+  namespace: syrin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: syrin-bridge
+      component: syrin
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: syrin-bridge
+        component: syrin
+    spec:
+      containers:
+        - name: syrin-bridge
+          image: ghcr.io/syrin-alert/syrin-bridge:1.0.1
+          command:
+            - "python3"
+            - "main.py"
+          env:
+            - name: TZ
+              value: "America/Sao_Paulo"
+            # rabbitmq
+            - name: RABBITMQ_HOST
+              value: "svc-rabbitmq.rabbitmq.svc.cluster.local"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_VHOST
+              value: "syrin"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_PASS
+
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #           - key: "kubernetes.io/hostname"
+      #             operator: In
+      #             values:
+      #               - "k8s-02"
+      #               - "k8s-03"
+      #           - key: apps
+      #             operator: In
+      #             values:
+      #               - services

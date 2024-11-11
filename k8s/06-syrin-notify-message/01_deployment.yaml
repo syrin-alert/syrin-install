@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: de-syrin-notify-message
+  namespace: syrin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: syrin-notify-message
+      component: syrin
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: syrin-notify-message
+        component: syrin
+    spec:
+      containers:
+        - name: syrin-notify-message
+          image: ghcr.io/syrin-alert/syrin-notify-message:1.0.1
+          command:
+            - "python3"
+            - "main.py"
+          env:
+            - name: TZ
+              value: "America/Sao_Paulo"
+            # Webhook
+            - name: WEBHOOK_TYPE
+              value: "apprise" # apprise or alertmanager
+            - name: WEBHOOK_BASE_URL
+              value: "http://svc-apprise.monitoring.svc.cluster.local"
+            - name: WEBHOOK_PORT
+              value: "8000" # apprise port 8000, port alertmanager 9093
+            # RabbitMq
+            - name: RABBITMQ_HOST
+              value: "svc-rabbitmq.rabbitmq.svc.cluster.local"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_VHOST
+              value: "syrin"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_PASS
+
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #           - key: "kubernetes.io/hostname"
+      #             operator: In
+      #             values:
+      #               - "k8s-02"
+      #               - "k8s-03"
+      #           - key: apps
+      #             operator: In
+      #             values:
+      #             - services

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: de-syrin-webhook
+  namespace: syrin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: syrin-webhook
+      component: syrin
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: syrin-webhook
+        component: syrin
+    spec:
+      containers:
+        - name: syrin-webhook
+          image: ghcr.io/syrin-alert/syrin-webhook:1.0.2
+          ports:
+            - name: "80-syrinrestapi"
+              containerPort: 80
+          command:
+            - "gunicorn"
+            - "-w"
+            - "1"
+            - "-b"
+            - "0.0.0.0:80"
+            - "main:app"
+            - "--capture-output"
+          env:
+            - name: TZ
+              value: "America/Sao_Paulo"
+            - name: PORT
+              value: "80"
+            # rabbitmq
+            - name: RABBITMQ_HOST
+              value: "svc-rabbitmq.rabbitmq.svc.cluster.local"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_VHOST
+              value: "syrin"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_PASS
+
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #           - key: "kubernetes.io/hostname"
+      #             operator: In
+      #             values:
+      #               - "k8s-02"
+      #               - "k8s-03"
+      #           - key: apps
+      #             operator: In
+      #             values:
+      #             - services

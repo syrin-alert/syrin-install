@@ -1,0 +1,32 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: svc-syrin-webhook
+  namespace: syrin
+spec:
+  type: ClusterIP
+  ports:
+  - name: syrin-webhook-tcp
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: syrin-webhook
+    component: syrin
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: svce-syrin-webhook
+  namespace: syrin
+spec:
+  type: NodePort
+  ports:
+  - name: syrin-webhook-tcp
+    nodePort: 30007
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: syrin-webhook
+    component: syrin

@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: de-syrin-humanization
+  namespace: syrin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: syrin-humanization
+      component: syrin
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: syrin-humanization
+        component: syrin
+    spec:
+      containers:
+        - name: syrin-humanization
+          image: ghcr.io/syrin-alert/syrin-humanization:1.0.1
+          command:
+            - "python3"
+            - "main.py"
+          env:
+            - name: TZ
+              value: "America/Sao_Paulo"
+
+            # ollama
+            - name: OLLAMA_HOSTNAME
+              value: "svc-ollama-ai.ollama.svc.cluster.local:11434"
+            - name: OLLAMA_MODEL
+              value: "llama3.2:3b"
+
+            # IMPORTANT - THIS IS A PROMPT TEMPLATE (AUDIO), YOU CAN CHANGE IT AS PER YOUR NEED
+            - name: PROMPT_AUDIO
+              value: |-
+                "Escreva uma notificação de alerta técnico com um título falando o nome do ambiente. Inclua o nome do ambiente, o problema identificado no erro e um resumo da situação. O nome do ambiente é representado pelo conteúdo dentro dos colchetes ([]).
+
+                Siga a estrutura da resposta:
+
+                  [Título falando: Alerta, o ambiente [nome do ambiente] não está mais estável]
+                  Problema: [problema identificado no erro]
+                  Dica da possível causa do erro: [dê uma dica muito breve da possível causa do erro]
+                  Resumo da situação: [informe possíveis impactos que o erro pode causar no ambiente, essa informação deve ser bem breve]
+                  Para saber mais: [direcione a pessoa que está ouvindo a ir na central de notificações, onde lá você passou mais detalhes sobre esse alerta, sseja breve ao comunicar isso]
+                Escala de humor: 3 (leve)
+
+                Lembre-se de que o nome do ambiente é apenas o conteúdo dentro dos colchetes! Erro: "
+
+            # IMPORTANT - THIS IS A PROMPT TEMPLATE (MESSAGE), YOU CAN CHANGE IT AS PER YOUR NEED
+            - name: PROMPT_MESSAGE
+              value: |-
+                "Escreva uma notificação de alerta técnico com um título. Inclua o nome do ambiente, o problema identificado no erro e um resumo da situação. O nome do ambiente é representado pelo conteúdo dentro dos colchetes ([]).
+
+                Estrutura da resposta:
+
+                  [Título: Alerta, o ambiente [nome do ambiente] apresenta instabilidade.]
+                  Problema: [problema identificado no erro]
+                  Dica da possível causa do erro: [dê uma dica breve da possível causa do erro]
+                  Resumo da situação: [por favor, informe possíveis impactos que o erro pode causar no ambiente, essa informação deve ser bem breve]
+                  Como pode ser resolvido: [por favor, informe uma possibilidade de como resolver o erro]
+                  Segue a mensagem de erro: [ menssagem de erro ]
+
+                Escala de humor: 2 (leve)
+                Lembre-se de que o nome do ambiente é apenas o conteúdo dentro dos colchetes! Erro: "
+
+            # rabbitmq
+            - name: RABBITMQ_HOST
+              value: "svc-rabbitmq.rabbitmq.svc.cluster.local"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_VHOST
+              value: "syrin"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: RABBITMQ_SLEEP_TIME
+              value: "1"
+
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #           - key: "kubernetes.io/hostname"
+      #             operator: In
+      #             values:
+      #               - "k8s-02"
+      #               - "k8s-03"
+      #           - key: apps
+      #             operator: In
+      #             values:
+      #               - services

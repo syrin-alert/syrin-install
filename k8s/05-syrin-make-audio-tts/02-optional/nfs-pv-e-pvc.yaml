@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-syrin-make-audio-tts-model
+  namespace: syrin
+spec:
+  capacity:
+    storage: 5Gi  
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    path: /storage-k8s/syrin/tts/model/  # Caminho no servidor NFS
+    server: 192.168.15.146      # IP do servidor NFS
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-syrin-make-audio-tts-model
+  namespace: syrin
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi  # Deve corresponder ao tamanho do PV
+  volumeName: pv-syrin-make-audio-tts-model
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-syrin-make-audio-tts-voice-clone
+  namespace: syrin
+spec:
+  capacity:
+    storage: 1Gi  
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    path: /storage-k8s/syrin/tts/clone/  # Caminho no servidor NFS
+    server: 192.168.15.146      # IP do servidor NFS
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-syrin-make-audio-tts-voice-clone
+  namespace: syrin
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi  # Deve corresponder ao tamanho do PV
+  volumeName: pv-syrin-make-audio-tts-voice-clone

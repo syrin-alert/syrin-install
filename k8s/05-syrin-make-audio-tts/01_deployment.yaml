@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: de-syrin-make-audio-tts
+  namespace: syrin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: syrin-make-audio-tts
+      component: syrin
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: syrin-make-audio-tts
+        component: syrin
+    spec:
+      containers:
+        - name: syrin-make-audio-tts
+          image: ghcr.io/syrin-alert/syrin-make-audio-tts:1.0.2
+          command:
+            - "python3"
+            - "main.py"
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 0.5
+            limits:
+              memory: 8Gi
+              cpu: 12.0
+          env:
+            - name: TZ
+              value: "America/Sao_Paulo"
+
+            ## TTS
+            - name: TTS_SPEED_VOICE
+              value: "1.1"
+            - name: TTS_LANGUAGE
+              value: "pt"
+            - name: TTS_EMOTION
+              value: "happy" # (ex: "neutral", "happy", "surprise" "sad", "angry")
+            - name: TTS_PATH_CLONE_AUDIO
+              value: "/app/veicaetano.wav"
+            - name: TTS_MODEL
+              value: "tts_models/multilingual/multi-dataset/xtts_v2"
+              # best model -> tts_models/multilingual/multi-dataset/xtts_v2
+              # best model use TTS_LANGUAGE = "pt"
+              # medium model of quality -> tts_models/multilingual/multi-dataset/your_tts
+
+            #rabbitmq
+            - name: RABBITMQ_HOST
+              value: "svc-rabbitmq.rabbitmq.svc.cluster.local"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_VHOST
+              value: "syrin"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: s-rabbitmq
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: RABBITMQ_TTL_DLX
+              value: "60000"
+
+            #minio
+            - name: MINIO_URL
+              value: "svc-minio-api.minio.svc.cluster.local"
+            - name: MINIO_PORT
+              value: "9000"
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: s-minio
+                  key: MINIO_ROOT_USER #MINIO_ACCESS_KEY
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: s-minio
+                  key: MINIO_ROOT_PASSWORD #MINIO_SECRET_KEY
+            - name: MINIO_BUCKET_WORK
+              value: "syrin"
+
+      #     volumeMounts:
+      #       - name: syrin-make-audio-tts-model
+      #         mountPath: /root/.local/share/tts/
+      #       # - name: syrin-make-audio-tts-voice-clone
+      #       #   mountPath: /app/veicaetano.wav
+      #       #   subPath: veicaetano.wav
+      # volumes:
+      #   - name: syrin-make-audio-tts-model
+      #     persistentVolumeClaim:
+      #       claimName: pvc-syrin-make-audio-tts-model
+          # emptyDir: {}
+          # hostPath:
+          #   path: /storage-k8s/syrin/tts/model/
+          #   type: Directory
+
+        # - name: syrin-make-audio-tts-voice-clone
+        #   persistentVolumeClaim:
+        #     claimName: pvc-syrin-make-audio-tts-voice-clone
+        #   hostPath:
+        #     path: /storage-k8s/syrin/tts/clone/
+        #     type: Directory
+
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #           - key: "kubernetes.io/hostname"
+      #             operator: In
+      #             values:
+      #               - "k8s-03"
+      #               - "k8s-04"
+      #           - key: apps
+      #             operator: In
+      #             values:
+      #               - services

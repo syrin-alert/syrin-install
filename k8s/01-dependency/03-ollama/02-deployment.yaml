@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: de-ollama
+  namespace: ollama
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.3.12
+          env:
+            - name: OLLAMA_MODELS
+              value: "llama3.2:3b"
+          ports:
+            - name: http-ollama
+              containerPort: 11434
+              protocol: TCP
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 0.5
+            limits:
+              memory: 8Gi
+              cpu: 6.0
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  [
+                    "/bin/sh",
+                    "-c",
+                    "echo $OLLAMA_MODELS | xargs -n1 /bin/ollama pull --insecure",
+                  ]
+
+          # volumeMounts:
+          #   - name: ollama-storage-base
+          #     mountPath: /root/.ollama
+          #   - name: ollama-storage-models-llama3
+          #     mountPath: /llama3.2:3b
+      # volumes:
+      #   - name: ollama-storage-base
+      #     persistentVolumeClaim:
+      #       claimName: pvc-ollama-base
+      #   - name: ollama-storage-models-llama3
+      #     persistentVolumeClaim:
+      #       claimName: pvc-ollama-models-llama3
+
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: "kubernetes.io/hostname"
+      #               operator: In
+      #               values:
+      #                 - "k8s-03"
