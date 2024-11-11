@@ -98,7 +98,7 @@ kubectl apply -f ./k8s/06-syrin-notify-message/
 
 ### Informações Adicionais
 
-Para configurar o componente **Syrin Speak**, que reproduz o áudio gerado, consulte o [Repositório SYRIN Speak](https://github.com/syrin-alert/syrin-install). Esse repositório inclui instruções detalhadas de instalação e configuração do serviço.
+Para configurar o componente **Syrin Speak**, que reproduz o áudio gerado, consulte o [Repositório SYRIN Speak](https://github.com/syrin-alert/syrin-speak). Esse repositório inclui instruções detalhadas de instalação e configuração do serviço.
 
 ## Conclusão
 
