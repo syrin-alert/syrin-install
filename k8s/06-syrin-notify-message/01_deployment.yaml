@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: syrin-notify-message
-          image: ghcr.io/syrin-alert/syrin-notify-message:1.0.1
+          image: ghcr.io/syrin-alert/syrin-notify-message:1.0.4
           command:
             - "python3"
             - "main.py"
