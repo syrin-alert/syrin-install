@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: syrin
+  namespace: argocd  
+spec:
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  description: Project syrin
+  destinations:
+    - namespace: syrin
+      server: https://kubernetes.default.svc
+  roles: []
+  sourceRepos:
+    # - '*'
+    - https://github.com/syrin-alert/syrin-webhook.git
