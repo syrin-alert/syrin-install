@@ -1,4 +1,8 @@
 ##############################
+# App Definition
+app: syrin-install
+
+##############################
 # Definition of the Secret
 secret:
   - name: rabbitmq

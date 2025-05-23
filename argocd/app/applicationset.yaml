@@ -13,7 +13,7 @@ spec:
             secretName: github-creds
             key: token
         filters:
-          - repositoryMatch: ^syrin-(webhook|bridge|notify-message|make-audio-tts|humanization|xyz)$
+          - repositoryMatch: ^syrin-(install|webhook|bridge|notify-message|make-audio-tts|humanization|xyz)$
         requeueAfterSeconds: 180
   template:
     metadata:
