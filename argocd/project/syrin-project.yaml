@@ -13,5 +13,11 @@ spec:
       server: https://kubernetes.default.svc
   roles: []
   sourceRepos:
-    # - '*'
+    - https://github.com/syrin-alert/syrin-install.git
+    - https://github.com/syrin-alert/apps-chart.git
     - https://github.com/syrin-alert/syrin-webhook.git
+    - https://github.com/syrin-alert/syrin-bridge.git
+    - https://github.com/syrin-alert/syrin-notify-message.git
+    - https://github.com/syrin-alert/syrin-make-audio-tts.git
+    - https://github.com/syrin-alert/syrin-humanization.git
+    - https://github.com/syrin-alert/syrin-speak.git

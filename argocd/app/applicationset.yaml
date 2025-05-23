@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: syrin-applications
+  namespace: argocd
+spec:
+  generators:
+    - scmProvider:
+        github:
+          organization: syrin-alert
+          allBranches: false
+          tokenRef:
+            secretName: github-creds
+            key: token
+        filters:
+          - repositoryMatch: ^syrin-(webhook|bridge|notify-message|make-audio-tts|humanization|xyz)$
+        requeueAfterSeconds: 180
+  template:
+    metadata:
+      name: '{{repository}}'
+    spec:
+      project: syrin
+      sources:
+        - repoURL: https://github.com/syrin-alert/{{repository}}.git  # 👈 forçando HTTPS manualmente
+          targetRevision: main
+          ref: definitions
+
+        - repoURL: https://github.com/syrin-alert/apps-chart.git
+          targetRevision: main
+          path: .
+          helm:
+            valueFiles:
+              - $definitions/helm/values.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: syrin
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
