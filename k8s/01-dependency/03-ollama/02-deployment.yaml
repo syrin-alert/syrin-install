@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: ollama
-          image: ollama/ollama:0.3.12
+          image: ollama/ollama:0.7.1
           env:
             - name: OLLAMA_MODELS
               value: "llama3.2:3b"
@@ -31,7 +31,7 @@ spec:
               cpu: 0.5
             limits:
               memory: 8Gi
-              cpu: 6.0
+              cpu: 8.0
           lifecycle:
             postStart:
               exec:

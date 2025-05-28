@@ -13,27 +13,46 @@ spec:
       labels:
         app: n8n
     spec:
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: n8n
-          image: n8nio/n8n:1.94.0
+          image: n8nio/n8n:1.94.1
           ports:
             - containerPort: 5678
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5678
+            initialDelaySeconds: 15
+            periodSeconds: 5
           env:
+            - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+              value: "true"
+            - name: N8N_RUNNERS_ENABLED
+              value: "true"
             - name: N8N_SECURE_COOKIE
               value: "false"
             - name: DB_POSTGRESDB_DATABASE
               value: n8n
             - name: DB_TYPE
-              value: "postgres"
+              value: "postgresdb"
             - name: DB_POSTGRESDB_USER
               valueFrom:
                 secretKeyRef:
-                  name: s-pg-superuser
+                  name: s-pg-n8n
                   key: username
             - name: DB_POSTGRESDB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: s-pg-superuser
+                  name: s-pg-n8n
                   key: password
             - name: DB_POSTGRESDB_HOST
               value: "pg-n8n-rw.n8n.svc.cluster.local"
@@ -51,3 +70,13 @@ spec:
               value: "5678"
             - name: WEBHOOK_URL
               value: "http://n8n.local/"
+          volumeMounts:
+            - name: n8n-storage
+              mountPath: /home/node/.n8n
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+      volumes:
+        - name: n8n-storage
+          persistentVolumeClaim:
+            claimName: pvc-n8n-data
