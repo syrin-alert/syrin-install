@@ -20,7 +20,7 @@ spec:
           image: ollama/ollama:0.7.1
           env:
             - name: OLLAMA_MODELS
-              value: "llama3.2:3b"
+              value: "llama3.2:latest"
           ports:
             - name: http-ollama
               containerPort: 11434
