@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: de-alertmanager-forwarder
+  namespace: syrin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager-forwarder
+  template:
+    metadata:
+      labels:
+        app: alertmanager-forwarder
+    spec:
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #       - matchExpressions:
+      #         - key: "kubernetes.io/hostname"
+      #           operator: In
+      #           values:
+      #           - k8s-02
+      #           - k8s-03
+      containers:
+        - name: alertmanager-forwarder
+          image: ghcr.io/kledingkast/alertmanagerforwarder:1.0.6
+          ports:
+            - name: "5000-almafor"
+              containerPort: 5000
+          env:
+            - name: ALERTMANAGER_EXTERNAL_URL
+              value: "http://svc-syrin-webhook.syrin.svc.cluster.local/api/text-to-speech"
+              # value: "http://192.168.15.36:30010/api/text-to-speech"
+            #   value: "http://alertmanager-main:9093/api/v1/alerts"
