@@ -11,19 +11,19 @@ spec:
       targetPort: 8880
   selector:
     app: kokoro
-# ---
-# kind: Service
-# apiVersion: v1
-# metadata:
-#   name: svce-kokoro
-#   namespace: kokoro
-# spec:
-#   type: NodePort
-#   ports:
-#   - name: kokoro-tcp
-#     nodePort: 30017
-#     port: 80
-#     targetPort: 8880
-#     protocol: TCP
-#   selector:
-#     app: kokoro
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: svce-kokoro
+  namespace: kokoro
+spec:
+  type: NodePort
+  ports:
+  - name: kokoro-tcp
+    nodePort: 30017
+    port: 80
+    targetPort: 8880
+    protocol: TCP
+  selector:
+    app: kokoro
