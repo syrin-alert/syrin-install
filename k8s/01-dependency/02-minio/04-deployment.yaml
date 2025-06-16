@@ -61,16 +61,16 @@ spec:
                   name: s-minio
                   key: MINIO_ROOT_PASSWORD
 
-            - name: MINIO_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: s-minio
-                  key: MINIO_ACCESS_KEY
-            - name: MINIO_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: s-minio
-                  key: MINIO_SECRET_KEY
+            # - name: MINIO_ACCESS_KEY
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: s-minio
+            #       key: MINIO_ACCESS_KEY
+            # - name: MINIO_SECRET_KEY
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: s-minio
+            #       key: MINIO_SECRET_KEY
             # get metrics the minio
             - name: MINIO_PROMETHEUS_AUTH_TYPE
               value: "public"
