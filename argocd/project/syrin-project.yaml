@@ -21,3 +21,4 @@ spec:
     - https://github.com/syrin-alert/syrin-make-audio-tts.git
     - https://github.com/syrin-alert/syrin-humanization.git
     - https://github.com/syrin-alert/syrin-speak.git
+    - https://github.com/syrin-alert/syrin-web-audio-alert.git
