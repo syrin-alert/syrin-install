@@ -1,0 +1,223 @@
+{
+  "name": "syrin-step-01-get-category",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -340,
+        -320
+      ],
+      "id": "a0111456-440a-4d85-9bf7-5b1d51f9c723",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "FiFqO2yGp7toMFkX",
+          "name": "Ollama account - GPU"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "queue": "01_syrin_notification_message_process",
+        "options": {
+          "parallelMessages": 1
+        }
+      },
+      "type": "n8n-nodes-base.rabbitmqTrigger",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -160
+      ],
+      "id": "e838ebe3-08ea-4d6d-84f8-f3635933dbd3",
+      "name": "01_syrin_notification_message_process - RabbitMQ Trigger",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "queue": "01_syrin_notification_audio_process",
+        "options": {
+          "parallelMessages": 1
+        }
+      },
+      "type": "n8n-nodes-base.rabbitmqTrigger",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -520
+      ],
+      "id": "531222b6-c251-4d46-abf4-d3844f9017e8",
+      "name": "01_syrin_notification_audio_process - RabbitMQ Trigger1",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "queue": "02_syrin_notification_message_process_categories",
+        "sendInputData": false,
+        "message": "={\"category\": \"{{ $json.output }}\",\"text\": {{ $('01_syrin_notification_message_process - RabbitMQ Trigger').item.json.content.parseJson().text.toJsonString().replace(/\"/g, '').toJsonString() }},\"level\": \"{{ $('01_syrin_notification_message_process - RabbitMQ Trigger').item.json.content.parseJson().level }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rabbitmq",
+      "typeVersion": 1.1,
+      "position": [
+        40,
+        -160
+      ],
+      "id": "062fb39f-4bfc-48b6-940a-0beb7287a0cb",
+      "name": "02_syrin_notification_message_process_categories - RabbitMQ",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um classificador de alertas de monitoramento Prometheus.\n\nClassifique o alerta abaixo em **uma única** das seguintes categorias:\n\n- instance-problem → problemas relacionados à infraestrutura do host, como disco cheio, uso de CPU, memória, IO Wait, falha no node, etc.\n- k8s-problem → problemas em recursos do Kubernetes, como pods com falha, nodes não prontos, deployments não atualizando, etc.\n- network-problem → problemas de rede, como perda de pacotes, falha de DNS, portas inacessíveis, etc.\n- application-problem → falhas na aplicação, como erro HTTP 500, tempo de resposta alto, falha no endpoint da API, etc.\n- unknown → se não for possível classificar com clareza.\n\nRetorne **somente a categoria** (por exemplo: `instance-problem`), sem explicações ou comentários.\n\nMensagem de alerta:\n---\n{{ $json.content.parseJson().text }}\n---\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        -160
+      ],
+      "id": "10c450ab-3c93-4265-b281-b87188536b47",
+      "name": "AI Agent - message",
+      "retryOnFail": true,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um classificador de alertas de monitoramento Prometheus.\n\nClassifique o alerta abaixo em **uma única** das seguintes categorias:\n\n- instance-problem → problemas relacionados à infraestrutura do host, como disco cheio, uso de CPU, memória, IO Wait, falha no node, etc.\n- k8s-problem → problemas em recursos do Kubernetes, como pods com falha, nodes não prontos, deployments não atualizando, etc.\n- network-problem → problemas de rede, como perda de pacotes, falha de DNS, portas inacessíveis, etc.\n- application-problem → falhas na aplicação, como erro HTTP 500, tempo de resposta alto, falha no endpoint da API, etc.\n- unknown → se não for possível classificar com clareza.\n\nRetorne **somente a categoria** (por exemplo: `instance-problem`), sem explicações ou comentários.\n\nMensagem de alerta:\n---\n{{ $json.content.parseJson().text }}\n---\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        -520
+      ],
+      "id": "1fcb5c39-d46e-4b73-957e-f43f20ee2998",
+      "name": "AI Agent - audio",
+      "retryOnFail": true,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "queue": "02_syrin_notification_audio_process_categories",
+        "sendInputData": false,
+        "message": "={\"category\": \"{{ $json.output }}\",\"text\": {{ $('01_syrin_notification_audio_process - RabbitMQ Trigger1').item.json.content.parseJson().text.toJsonString().replace(/\"/g, '').toJsonString() }},\"level\": \"{{ $('01_syrin_notification_audio_process - RabbitMQ Trigger1').item.json.content.parseJson().level }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rabbitmq",
+      "typeVersion": 1.1,
+      "position": [
+        40,
+        -520
+      ],
+      "id": "725c2d9d-07c2-4786-8f0d-9a26f5647e22",
+      "name": "02_syrin_notification_audio_process_categories - RabbitMQ",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - audio",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent - message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01_syrin_notification_message_process - RabbitMQ Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "01_syrin_notification_audio_process - RabbitMQ Trigger1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - message": {
+      "main": [
+        [
+          {
+            "node": "02_syrin_notification_message_process_categories - RabbitMQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - audio": {
+      "main": [
+        [
+          {
+            "node": "02_syrin_notification_audio_process_categories - RabbitMQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dd8cbd54-a155-47f4-a655-638485acf83b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "66a3c10f0a6579f8f080184ed59b4d630266bf0739abc44951b886256ef7409e"
+  },
+  "id": "y10j695INQvFYa5I",
+  "tags": []
+}

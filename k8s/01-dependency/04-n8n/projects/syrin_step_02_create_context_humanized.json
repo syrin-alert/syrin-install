@@ -1,0 +1,280 @@
+{
+  "name": "syrin-step-02-create-context-humanized",
+  "nodes": [
+    {
+      "parameters": {
+        "queue": "02_syrin_notification_audio_process_categories",
+        "options": {
+          "parallelMessages": 1
+        }
+      },
+      "type": "n8n-nodes-base.rabbitmqTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        -580
+      ],
+      "id": "e4c1ae45-738f-497b-8f77-688f71f86009",
+      "name": "02_syrin_notification_audio_process_categories - RabbitMQ Trigger",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um assistente que transforma alertas do Prometheus em mensagens faladas curtas, claras e naturais, como se uma pessoa estivesse avisando por alto-falante na empresa.\n\nGere uma única frase objetiva, com tom de aviso urgente, usando linguagem simples e natural — como se alguém estivesse informando por voz no sistema de som.\n\nSiga estas orientações:\n\n1. **Comece identificando o alvo do problema**: pode ser um pod, servidor, instância ou IP.  \n   - Pegue essa informação de campos como `Summary:` ou qualquer trecho com `instance`, `pod`, `host`, `IP`.\n\n2. **Descreva o que está acontecendo** usando o conteúdo de `Description:`.  \n   - Seja direto e claro (ex: “está quase sem memória”, “está fora do ar”, “não está respondendo”).\n\n3. Se houver o campo `tenancy`, inclua ele naturalmente na frase, como por exemplo:  \n   - “...no ambiente mutantrogue”, ou  \n   - “...no cliente mutantrogue”.\n\n4. Se houver alguma métrica ou valor claro (como `VALUE = 9.2`, ou “uso acima de 90%”), mencione isso como reforço da gravidade.\n\n5. Finalize dizendo:  \n   `\"Isso é um alerta de [categoria]\"`  \n   Substitua `[categoria]` conforme a tabela:\n\n| Categoria              | Texto final da frase              |\n|------------------------|-----------------------------------|\n| instance-problem       | infraestrutura                   |\n| k8s-problem            | Kubernetes                        |\n| network-problem        | rede                              |\n| application-problem    | aplicação                         |\n| unknown                | categoria desconhecida            |\n\n---\n\nDados do alerta:\n---\nTexto: {{ $json.content.parseJson().text }}\nCategoria: {{ $json.content.parseJson().category }}\n\n---\n\nRetorne apenas a frase final, com uma estrutura natural, falada e objetiva. Nunca use linguagem técnica ou neutra demais. Priorize clareza, impacto e contexto.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -1340,
+        -580
+      ],
+      "id": "f747a1ed-723d-45f7-9b7f-5fdbb623ded8",
+      "name": "AI Agent - audio",
+      "retryOnFail": true,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "queue": "02_syrin_notification_message_process_categories",
+        "options": {
+          "parallelMessages": 1
+        }
+      },
+      "type": "n8n-nodes-base.rabbitmqTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        -300
+      ],
+      "id": "113f2fd7-9983-4df8-aeb0-e8dde4b1217b",
+      "name": "02_syrin_notification_message_process_categories",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "2067637854",
+        "text": "={{ $json.content.parseJson().text.replace(/_/g, '\\\\_') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -660,
+        -300
+      ],
+      "id": "b71e6bd9-c134-4efc-a222-e18aaea57ec4",
+      "name": "Telegram",
+      "webhookId": "3417f125-964e-4def-8ce4-51764dd57349",
+      "credentials": {
+        "telegramApi": {
+          "id": "3pxZakzwkzu6GJiz",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "queue": "03_syrin_notification_audio_process_tts",
+        "sendInputData": false,
+        "message": "={\"category\": \"{{ $('02_syrin_notification_audio_process_categories - RabbitMQ Trigger').item.json.content.parseJson().category }}\",\"text\": \"{{ $json.output.replace(/\"/g, '').replace(/\\\\n|\\\\r/g, '').trim() }}\",\"level\": \"{{ $('02_syrin_notification_audio_process_categories - RabbitMQ Trigger').item.json.content.parseJson().level }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rabbitmq",
+      "typeVersion": 1.1,
+      "position": [
+        -960,
+        -580
+      ],
+      "id": "ce557ae5-be1c-49b0-8bc3-5d1df4c1fce1",
+      "name": "03_syrin_notification_audio_process_tts",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "queue": "03_syrin_notification_message_process_send",
+        "options": {
+          "parallelMessages": 1
+        }
+      },
+      "type": "n8n-nodes-base.rabbitmqTrigger",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -580
+      ],
+      "id": "72e2cf56-d73e-44fe-894e-f7c8f1c7116c",
+      "name": "03_syrin_notification_message_process_send_telegram",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "queue": "03_syrin_notification_message_process_send",
+        "sendInputData": false,
+        "message": "={\"category\": \"{{ $('02_syrin_notification_message_process_categories').item.json.content.parseJson().category }}\",\"text\": {{ $json.output.replace(/(?:\\r\\n|\\r|\\n)+$/, '').toJsonString().trim() }}, \"level\": \"{{ $('02_syrin_notification_message_process_categories').item.json.content.parseJson().level }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rabbitmq",
+      "typeVersion": 1.1,
+      "position": [
+        -960,
+        -300
+      ],
+      "id": "11035f1f-c135-4312-8f35-5f24c24f3e66",
+      "name": "03_syrin_notification_message_process_send",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um assistente que transforma alertas do Prometheus em mensagens técnicas, formatadas para envio via Telegram usando Markdown.\n\nCom base nas informações abaixo, gere uma **mensagem clara, organizada e formatada**, com os seguintes campos:\n\n---\n\n1. **Título:**\n`🔔 *Syrin Alerta Prometheus*`\n\n2. **Nível do alerta:**\n- `🔴 *Nível:* Crítico` → para `Critical`\n- `🟠 *Nível:* Aviso` → para `Warning`\n\n3. **Tipo do problema:** com base na categoria:\n- `instance-problem` → `📛 *Tipo:* Problema de infraestrutura`\n- `k8s-problem` → `📛 *Tipo:* Problema no Kubernetes`\n- `network-problem` → `📛 *Tipo:* Problema de rede`\n- `application-problem` → `📛 *Tipo:* Falha na aplicação`\n- `unknown` → `📛 *Tipo:* Categoria não identificada`\n\n4. **Instância, pod ou serviço afetado:**\nBusque por valores como:\n- `instance`, `nodename`, `pod`, `node`, `namespace`\n- Veja com atenção nos values de Description e Summary\nExemplo: `📍 *Instância:* cj-clean-delete-pods-restarted-29164740-sx6md`\n\n5. **Detalhe do alerta:**\nDescreva o evento principal de forma clara e direta.\nExemplo: `📝 *Detalhe:* Pod está em estado não saudável há mais de 15 minutos`\n\n6. **Métrica ou causa provável:**\nSe disponível, extraia valores como `VALUE`, `LABELS`, ou trechos como `IO Wait acima de 80%`  \nExemplo: `📊 *Métrica:* VALUE = 1`\n\n7. **Ambiente (detecção por sigla conhecida):**\n- TENHA MUITA ATENÇÃO NESTAS ETAPAS ABAIXO\n- Procure **as seguintes siglas de ambiente** no conteúdo do campo `Environment:` ou `Kubernetes:`:  \n  `PRD`, `HML`, `STG`, `DEV`, `QA`, `POC`, `DR`\n- A primeira sigla encontrada será considerada o ambiente (ex: `PRD`)\n- Em seguida:\n  - Pegue o valor completo do campo `Tenancy:` (ex: mutantrogue)\n  - Pegue o valor completo do campo `Kubernetes:` (ex: OKE_PRD_MULTICLIENTVOZ_ROGUE)\n- Combine tudo no seguinte formato:\n  ```\n  🌎 *Ambiente:* PRD (mutantrogue - OKE_PRD_MULTICLIENTVOZ_ROGUE)\n  ```\n- Se não encontrar a sigla, o tenancy ou o cluster, retorne:\n  ```\n  🌎 *Ambiente:* (não identificado)\n  ```\n- **Não invente dados se algum estiver ausente.**\n  ```\n\n8. **Expressão Prometheus (condicional):**\n- Se o alerta contiver uma expressão **válida de métrica Prometheus** como `rate(...)`, `irate(...)`, `avg_over_time(...)`, etc.,  \nadicione ao final a seguinte linha:\n```\n⏱️ Este alerta foi gerado automaticamente via Prometheus com base na métrica: <métrica encontrada>\n```\n- **Se não houver métrica identificável, não inclua essa linha.**\n\n---\n\nFormato da mensagem final (exemplo):\n🔔 *Syrin Alerta Prometheus*\n\n🔴 *Nível:* Crítico  \n📛 *Tipo:* Problema no Kubernetes  \n📍 *Instância:* cj-clean-delete-pods-restarted-29164740-sx6md  \n📝 *Detalhe:* Pod está em estado não saudável há mais de 15 minutos  \n📊 *Métrica:* VALUE = 1  \n🌎 *Ambiente:* PRD (mutantrogue - OKE_PRD_MULTICLIENT_ROGUE)\n\n⏱️ Este alerta foi gerado automaticamente via Prometheus com base na métrica: rate(...)\n\nUse apenas os dados fornecidos abaixo. Não inclua explicações, comentários, nem exemplos. Nunca invente dados ausentes.\n\n---\n\n**Dados do alerta:**\n```\nTexto: {{ $json.content.parseJson().text }}\nCategoria: {{ $json.content.parseJson().category }}\nLevel: {{ $json.content.parseJson().level }}\n```\n\n---\n\nRetorne somente a mensagem final formatada para Telegram. Não inclua explicações ou exemplos.\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -1340,
+        -300
+      ],
+      "id": "de562bab-89ce-47c0-b6d4-861d5f3e353f",
+      "name": "AI Agent - msg",
+      "retryOnFail": true,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "model": "gemma2:9b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -1380,
+        -420
+      ],
+      "id": "97eef21a-881b-4554-9b63-5677ddd1df04",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "FiFqO2yGp7toMFkX",
+          "name": "Ollama account - GPU"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "02_syrin_notification_audio_process_categories - RabbitMQ Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - audio": {
+      "main": [
+        [
+          {
+            "node": "03_syrin_notification_audio_process_tts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02_syrin_notification_message_process_categories": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03_syrin_notification_message_process_send_telegram": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - msg": {
+      "main": [
+        [
+          {
+            "node": "03_syrin_notification_message_process_send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - audio",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent - msg",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "50e4ee6c-8286-4f2f-aeef-ec8c7aba5d19",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "66a3c10f0a6579f8f080184ed59b4d630266bf0739abc44951b886256ef7409e"
+  },
+  "id": "8DvqIycJnePoR8pV",
+  "tags": []
+}

@@ -1,0 +1,193 @@
+{
+  "name": "syrin-step-03-create-context-tts",
+  "nodes": [
+    {
+      "parameters": {
+        "queue": "03_syrin_notification_audio_process_tts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rabbitmqTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1060,
+        -700
+      ],
+      "id": "04235c0d-efdc-4490-91a0-dc299a364825",
+      "name": "03_syrin_notification_audio_process_tts",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://svc-kokoro.kokoro.svc.cluster.local/v1/audio/speech",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"kokoro\",\n  \"voice\": \"pm_santa\",\n  \"input\": \"{{ $('03_syrin_notification_audio_process_tts').item.json.content.parseJson().text }}\",\n  \"speed\": 0.8,\n  \"language\": \"pt\"\n}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        -700
+      ],
+      "id": "35851eea-eda9-4594-bc94-46b8289f0464",
+      "name": "kokoro-tts"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "=syrin",
+        "fileName": "=/queue-play/{{ $json.formattedDate }}.mp3",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -700
+      ],
+      "id": "dc814daa-9f11-485b-b87a-85126a8fa823",
+      "name": "S3-Upload-Voice-Notification",
+      "credentials": {
+        "s3": {
+          "id": "w7pdpt1NwHoR2zCE",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "timezone": "America/Sao_Paulo"
+        }
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        -700
+      ],
+      "id": "4480cec1-1c44-46e9-a236-5266b4fee85f",
+      "name": "GetTimeCurrent"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $json.currentDate }}",
+        "format": "custom",
+        "customFormat": "dd-LL-yyyy/TT",
+        "outputFieldName": "=formattedDate",
+        "options": {
+          "timezone": true
+        }
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -680,
+        -700
+      ],
+      "id": "528e2556-2d63-4a93-95eb-ce0cee42b178",
+      "name": "Formmat-Date-Time"
+    },
+    {
+      "parameters": {
+        "queue": "04_syrin_notification_audio_process_play",
+        "sendInputData": false,
+        "message": "={\"category\": \"{{ $('03_syrin_notification_audio_process_tts').item.json.content.parseJson().category }}\",\"text\": \"{{ $('03_syrin_notification_audio_process_tts').item.json.content.parseJson().text }}\",\n\"level\": \"{{ $('03_syrin_notification_audio_process_tts').item.json.content.parseJson().level }}\", \"datetime\": \"{{ $('GetTimeCurrent').item.json.currentDate }}\", \"file\": \"{{ $('kokoro-tts').item.json.formattedDate }}.mp3\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rabbitmq",
+      "typeVersion": 1.1,
+      "position": [
+        -60,
+        -700
+      ],
+      "id": "ebec445e-c110-44b9-9266-5f4f86c165fe",
+      "name": "04_syrin_notification_audio_process_play",
+      "credentials": {
+        "rabbitmq": {
+          "id": "G3vzUbcAvacKyFsH",
+          "name": "RabbitMQ account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "03_syrin_notification_audio_process_tts": {
+      "main": [
+        [
+          {
+            "node": "GetTimeCurrent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "kokoro-tts": {
+      "main": [
+        [
+          {
+            "node": "S3-Upload-Voice-Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetTimeCurrent": {
+      "main": [
+        [
+          {
+            "node": "Formmat-Date-Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formmat-Date-Time": {
+      "main": [
+        [
+          {
+            "node": "kokoro-tts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S3-Upload-Voice-Notification": {
+      "main": [
+        [
+          {
+            "node": "04_syrin_notification_audio_process_play",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "267cf9b0-2621-4568-96bc-c852cca19c72",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "66a3c10f0a6579f8f080184ed59b4d630266bf0739abc44951b886256ef7409e"
+  },
+  "id": "cu0S7VIjIbr6NSGd",
+  "tags": []
+}
